@@ -20,13 +20,11 @@ Other json parsers can be used. In this case you need to adapt the script "get-s
 You need 2 things to get the scripts working:
 
 * An access to Tizen Gerrit 
-* A local copy of the Tizen repos
+* A local, updated copy of the Tizen repos
 
 # Install
 
-There is no installer (yet) so you need to manually copy the scripts in a directory of your PATH.
-
-The scripts are located in the scripts/ subdirectories.
+	./install <destination>
 
 # Run
 
@@ -36,33 +34,34 @@ Usage:
 
 	get-status-loop <path_to_local_repo> <input_file> <invalid_bugs_list>
 
-<input_file> is a text file containing the bug ID and the corresponding project
+* "input_file" is a text file containing the bug ID and the corresponding project
 
-<invalid_bugs_list> is a list of invalid bugs, it is made to refer to the bugs closed as invalid in Jira (or any bugs that are closed without a fix)
+* "invalid_bugs_list" is a list of invalid bugs, it is made to refer to the bugs closed as invalid in Jira (or any bugs that are closed without a fix)
+
+# Mechanism
+
+* Check the bug ID against a list of invalid bugs
+* Query GErrit to get a status
+* If the status is "MERGED", check against the local repo whether it is submitted and accepted or not.
 
 # Internal scripts
 
 Those scripts are used by the main script "get-status-loop" but can also be run on their own.
 
-get-status
-
+* get-status
 Return the status of a single bug
 
-get-gerrit-info
+* get-gerrit-info
+Return the result of a per project query to Gerrit filtered with a regexp. 
 
-Return the result of a query to Gerrit filtered with a regexp. 
-
-get-commit
-
+* get-commit
 Return the commit associated with a changeID
 
-get-repo-status
-
+* get-repo-status
 Return the status of a merged commit; status are MERGED, SUBMITTED, ACCEPTED.
 
 # TO DO
 
-* Add an install script or a Makefile
 * Allow usage of alternate json parsers (underscore-cli https://github.com/ddopson/underscore-cli)
 * Add a script that return stats from a csv file
 * Add more fields in the csv file (gerrit-owner...)
