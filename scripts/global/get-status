@@ -1,0 +1,99 @@
+#!/bin/bash
+
+if [ "$#" -ne 4 ]
+then
+    echo ""
+    echo "Return the status of a commit."
+    echo ""
+    echo "Statuses are:"
+    echo "  NOT_FOUND  Commit not found, either it doesn't exist or is a local commit"
+    echo "  INVALID    Bug is part of the invalid list"
+    echo "  REVIEW     Commit is being reviewed and waits to be merged"
+    echo "  ABANDONED  Commit has been pushed to be reviewed but then abandonned"
+    echo "  MERGED     Commit is merged and waits to be submitted"
+    echo "  SUBMITTED  Commit is submitted and waits to be accepted"
+    echo "  ACCEPTED   Commit is accepted"
+    echo "  ERROR      This shouldn't happen"
+    echo ""
+    echo "Usage: \"get-status <path_to_local_repo> <project> <bug_ID> <invalid_bugs_list>\""
+    echo ""
+    echo "bug_ID format being: <subproject>-<number>"
+    echo "invalid_bugs_list is a file listing bug ID; format: <subproject>-<number>, one per line"
+    echo ""
+    echo "Note that this script depends on the json parser \"underscore-cli\" https://github.com/ddopson/underscore-cli"
+    echo "Alternative json parser: jq http://stedolan.github.io/jq/"
+    echo ""
+    exit -1
+fi
+
+REPO=$1
+PROJECT=$2
+BUG=$3
+INVALID=$4
+
+# Check that the bug is not part of the invalid list
+INV=$(grep -ci "$BUG" $INVALID)
+if [ $INV -gt 0 ]
+then
+    echo $PROJECT,"NULL",$BUG,"NULL","NULL","INVALID"
+    exit 0
+fi
+
+# Temporary files
+GERRIT_INFO=/tmp/gerrit-info.tmp
+GERRIT_INFO_FORMAT=/tmp/gerrit-info-format.tmp
+
+# Automatically delete temporary files when script ends
+trap "rm -f $GERRIT_INFO" EXIT
+trap "rm -f $GERRIT_INFO_FORMAT" EXIT
+
+# Create the pattern from the bug ID subproject and the bug number (sometimes the bug ID isn't correctly written...)
+PATTERN="$(echo $BUG | cut -f 1 -d '-').*$(echo $BUG | cut -f 2 -d '-')"
+# Get information from Gerrit
+get-gerrit-info $PROJECT $PATTERN > $GERRIT_INFO
+
+# If Gerrit doesn't return any information
+TMPSIZE=$(stat -c%s "$GERRIT_INFO")
+if [ $TMPSIZE -eq 0 ]
+then
+    echo $PROJECT,"NULL",$BUG,"NULL","NULL","NOT_FOUND"
+    exit 0
+fi
+
+# echo removes the '\' before '"' which causes json parsing to fail, adding a second '\' before "\"" corrects this issue
+sed 's/\"/\\"/g' $GERRIT_INFO > $GERRIT_INFO_FORMAT
+
+while read RESULT;
+do
+    BRANCH=$(echo $RESULT | underscore extract branch | cut -f 2 -d '"')
+    CHANGEID=$(echo $RESULT | underscore extract id | cut -f 2 -d '"')
+    STATUS=$(echo $RESULT | underscore extract status | cut -f 2 -d '"')
+    COMMIT="NULL"
+    case "$STATUS" in
+    "NEW")
+        STATUS="REVIEW"
+        ;;
+    "MERGED")
+        # Gerrit status=merged, we need to check if it is submitted and accepted
+        # Get the commit ID based on the change ID
+        COMMIT=$(get-commit $REPO $PROJECT $BRANCH $CHANGEID)
+        # Get the status of the commit
+        if [ "$COMMIT" == "" ]
+        then
+            COMMIT="NULL"
+        else
+            STATUS=$(get-repo-status $REPO $PROJECT $BRANCH $COMMIT)
+        fi
+        ;;
+    "ABANDONED")
+        # Do nothing
+        ;;
+    *)
+        # This shouldn't happen
+        STATUS="ERROR"
+        ;;
+    esac
+    echo $PROJECT,$BRANCH,$BUG,$CHANGEID,$COMMIT,$STATUS
+done < $GERRIT_INFO_FORMAT
+
+exit 0

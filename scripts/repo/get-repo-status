@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ "$#" -ne 4 ]
+then
+    echo ""
+    echo "Returns the status of the given commit. Available status are: MERGED, SUBMITTED and ACCEPTED"
+    echo ""
+    echo "Usage: \"get-repo-status <repo> <project> <branch> <commit>\""
+    echo ""
+    exit -1
+fi
+
+REPO=$1
+PROJECT=$2
+BRANCH=$3
+COMMIT=$4
+STATUS="MERGED"
+
+cd $REPO/$PROJECT &> /dev/null
+git checkout $BRANCH &> /dev/null
+
+# Check if it is accepted
+COUNT=$(git tag --contains $COMMIT | grep -ci accepted)
+if [ "$COUNT" -gt 0 ]
+then
+    STATUS="ACCEPTED"
+else
+    # If not accepted, check if it is submitted
+    COUNT=$(git tag --contains $COMMIT | grep -ci submit)
+    if [ "$COUNT" -gt 0 ]
+    then
+        STATUS="SUBMITTED"
+    fi
+fi
+cd - &> /dev/null
+
+echo $STATUS
+
+exit 0

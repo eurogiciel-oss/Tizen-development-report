@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "$#" -ne 3 ]
+then
+    echo ""
+    echo "Return <project>,<branch>,<bug_id>,<changeid>,<commit>,<status> (csv format) for each entry in the input file"
+    echo ""
+    echo "Usage: \"get-status-loop <path_to_local_repo> <input_file> <invalid_bugs_list>\""
+    echo ""
+    echo "input_file format being the couple: \"<bug_id> <project>\", one per line"
+    echo "invalid_bugs_list is a file listing bug ID; format: <subproject>-<number>, one per line"
+    echo ""
+    exit -1
+fi
+
+REPO=$1
+INPUT=$2
+INVALID=$3
+
+i=1
+DATA=`cat $INPUT`
+for FIELD in $DATA ;
+do
+    if [ $i -eq 1 ]
+    then
+        BUG=$FIELD
+        i=0
+    else
+        PROJECT=$FIELD
+        get-status $REPO $PROJECT $BUG $INVALID
+        i=1
+    fi
+done
+
+exit 0
