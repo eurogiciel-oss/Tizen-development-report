@@ -9,7 +9,7 @@ You are more than welcome to report any bugs you find or supply fixes or improve
 
 # Dependency
 
-The script get-status and get-gerrit-status-open need the json parser jq (http://stedolan.github.io/jq/)
+Scripts get-status and get-gerrit-status-open need the json parser jq (http://stedolan.github.io/jq/)
 
 # Requirements
 
@@ -28,7 +28,7 @@ There isn't an uninstall script (yet).
 
 # Main scripts
 
-get-status-loop
+##get-status-loop
 
 Return a full report given a list of projects and bug ID. Return results with a csv format.
 
@@ -44,13 +44,13 @@ You can easily get a bug list from Jira using the export function after a search
 
 Note that this script was made for the multi-user architecture so it may not suit every usage but the script being fairly simple, it is easy to adapt to your needs.
 
-get-gerrit-status-open
+##get-gerrit-status-open
 
 Generates a status of the opened Gerrit reviews which didn't receive any activity in the last N days. Return results with a csv format.
 
 	get-gerrit-status-open <age_in_days>
 
-get-status-stats
+##get-status-stats
 
 Returns statistics regarding status, checking a list of status against a generated report file. Return results with a csv format.
 
@@ -62,31 +62,31 @@ Usage:
 
 Those scripts are used by the main scripts but can also be run on their own.
 
-get-invalid
+##get-invalid
 Returns the list of commits that need to be reworked. Only returns the commits that are older than the number of days given as parameter.
 
-get-to-merge
+##get-to-merge
 Returns the list of commits which are ready to be merged. Only returns the commits that are older than the number of days given as parameter.
 
-get-to-review
+##get-to-review
 Returns the list of commits that need to be reviewed. Only returns the commits that are older than the number of days given as parameter.
 
-get-to-review-and-verify
+##get-to-review-and-verify
 Returns the list of commits that need to be reviewed and verified. Only returns the commits that are older than the number of days given as parameter.
 
-get-to-verify
+##get-to-verify
 Returns the list of commits that need to be verified. Only returns the commits that are older than the number of days given as parameter.
 
-get-status
+##get-status
 Return the status of a single bug
 
-get-gerrit-info
+##get-gerrit-info
 Return the result of a per project query to Gerrit filtered with a regexp.
 
-get-commit
+##get-commit
 Return the commit associated with a changeID
 
-get-repo-status
+##get-repo-status
 Return the status of a merged commit; status are MERGED, SUBMITTED, ACCEPTED.
 
 # TO DO
