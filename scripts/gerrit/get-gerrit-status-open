@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# BUG with https://review.tizen.org/gerrit/#/c/16751/
+# ssh review.tizen.org gerrit query --format json "change:Ie0ebe941970caa858bf413c293dc653408902ff1" > $GERRIT_STATUS_OPEN
+
+if [ "$#" -ne 1 ]
+then
+    echo
+    echo "Generates a status of the opened Gerrit review older than the given age (in days)."
+    echo
+    echo "Return format is csv."
+    echo
+    echo "Usage: \"./get-gerrit-status-open <age_in_days>\""
+    echo
+    echo "This script requires the json parser jq (http://stedolan.github.io/jq/)."
+    echo
+    exit -1
+fi
+
+AGE=$1
+
+# Temporary files
+GERRIT_STATUS_OPEN=/tmp/gerrit-status-open.tmp
+GERRIT_STATUS_OPEN_FORMAT=/tmp/gerrit-status-open-format.tmp
+
+# Automatically delete temporary files when script ends
+trap "rm -f $GERRIT_STATUS_OPEN" EXIT
+trap "rm -f $GERRIT_STATUS_OPEN_FORMAT" EXIT
+
+# Extracts information from the json file GERRIT_STATUS_OPEN and print them in a csv format
+make_csv ()
+{
+    # echo removes the '\' before '"' which causes json parsing to fail, adding a second '\' before "\"" corrects this issue
+    sed 's/\"/\\"/g' $GERRIT_STATUS_OPEN > $GERRIT_STATUS_OPEN_FORMAT
+
+    mv $GERRIT_STATUS_OPEN_FORMAT $GERRIT_STATUS_OPEN
+
+    # Removes the last line which is just the result of the Gerrit query
+    head -n -1 $GERRIT_STATUS_OPEN > $GERRIT_STATUS_OPEN_FORMAT
+
+    while read RESULT;
+    do
+        # Extract information
+        PROJECT=$(echo $RESULT | jq ".project" | cut -f 2 -d '"')
+        NUMBER=$(echo $RESULT | jq ".number" | cut -f 2 -d '"')
+        OWNER=$(echo $RESULT | jq ".owner | .name" | cut -f 2 -d '"')
+        CREATED=$(echo $RESULT | jq ".createdOn" | cut -f 2 -d '"')
+        UPDATED=$(echo $RESULT | jq ".lastUpdated" | cut -f 2 -d '"')
+
+        # Convert seconds since the epoch to a date
+        CREATED=$(date --date="@$CREATED" +%x)
+        UPDATED=$(date --date="@$UPDATED" +%x)
+
+        # Create link to the review from the review number
+        LINK="https://review.tizen.org/gerrit/#/c/$NUMBER/"
+
+        echo $STATUS,$PROJECT,$OWNER,$CREATED,$UPDATED,$NUMBER,$LINK
+    done < $GERRIT_STATUS_OPEN_FORMAT
+}
+
+echo "Status,Project,Owner,Created on,Last updated,Number,Link"
+
+STATUS="TO_MERGE"
+get-to-merge $AGE > $GERRIT_STATUS_OPEN
+make_csv
+
+STATUS="TO_REVIEW"
+get-to-review $AGE > $GERRIT_STATUS_OPEN
+make_csv
+
+STATUS="TO_VERIFY"
+get-to-verify $AGE > $GERRIT_STATUS_OPEN
+make_csv
+
+STATUS="TO_REVIEW_AND_VERIFY"
+get-to-review-and-verify $AGE > $GERRIT_STATUS_OPEN
+make_csv
+
+STATUS="INVALID"
+get-invalid $AGE > $GERRIT_STATUS_OPEN
+make_csv
+
+exit 0

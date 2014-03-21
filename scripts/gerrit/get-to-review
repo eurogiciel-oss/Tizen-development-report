@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ];
+then
+    echo
+    echo "Returns the list of commits that need to be reviewed. Only returns the commits that are older than the number of days given as parameter."
+    echo
+    echo "Returns the commits that:"
+    echo "* have a verified +1 but no verify -1"
+    echo "* don't have a code review +2 or -2"
+    echo "* are more than 'N' days old"
+    echo
+    echo "The return format is json."
+    echo
+    echo "Usage: \"get-to-review <number_of_days>\""
+    echo
+    exit -1
+fi
+
+AGE=$1
+
+ssh review.tizen.org gerrit query --format json "status:open age:${AGE}d label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2 NOT label:Code-Review+2"
