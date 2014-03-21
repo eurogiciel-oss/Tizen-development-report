@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [ "$#" -ne 2 ]
+then
+    echo
+    echo "Return statistics about statuses."
+    echo
+    echo "Usage: \"get-status <input_file> <status_list>\""
+    echo
+    exit -1
+fi
+
+INPUT=$1
+STATUSES=$2
+
+TOTAL=0
+DATA=`cat $STATUSES`
+for FIELD in $DATA ;
+do
+    COUNT=$(grep -c $FIELD $INPUT)
+    echo $FIELD,$COUNT
+    TOTAL=$(($TOTAL+$COUNT))
+done
+
+echo ,
+echo TOTAL,$TOTAL
+
+exit 0

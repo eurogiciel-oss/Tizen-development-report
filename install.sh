@@ -15,6 +15,7 @@ BINDIR=$1
 install scripts/gerrit/get-gerrit-info $BINDIR
 install scripts/global/get-status $BINDIR
 install scripts/global/get-status-loop $BINDIR
+install scripts/global/get-status-stats $BINDIR
 install scripts/repo/get-commit $BINDIR
 install scripts/repo/get-repo-status $BINDIR
 
