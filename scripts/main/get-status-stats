@@ -3,7 +3,7 @@
 if [ "$#" -ne 2 ]
 then
     echo
-    echo "Return statistics about statuses."
+    echo "Returns statistics regarding status, checking a list of status against a generated report file."
     echo
     echo "Usage: \"get-status <input_file> <status_list>\""
     echo
