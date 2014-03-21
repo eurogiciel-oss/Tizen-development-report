@@ -17,7 +17,7 @@ TOTAL=0
 DATA=`cat $STATUSES`
 for FIELD in $DATA ;
 do
-    COUNT=$(grep -c $FIELD $INPUT)
+    COUNT=$(grep -c "$FIELD," $INPUT)
     echo $FIELD,$COUNT
     TOTAL=$(($TOTAL+$COUNT))
 done
