@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+
+# See the file LICENSE for copying permission.
+
 # BUG with https://review.tizen.org/gerrit/#/c/16751/
 # ssh review.tizen.org gerrit query --format json "change:Ie0ebe941970caa858bf413c293dc653408902ff1" > $GERRIT_STATUS_OPEN
 

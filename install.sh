@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+
+# See the file LICENSE for copying permission.
+
 if [ "$#" -ne 1 ]
 then
     echo
@@ -19,6 +23,6 @@ install scripts/gerrit/* $BINDIR
 install scripts/repo/* $BINDIR
 
 # Global scripts
-install scripts/main/* $BINDIR
+install scripts/global/* $BINDIR
 
 exit 0
