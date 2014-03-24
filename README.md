@@ -89,13 +89,16 @@ Return the commit associated with a changeID
 ##get-repo-status
 Return the status of a merged commit; status are MERGED, SUBMITTED, ACCEPTED.
 
+# Bugs
+
+https://github.com/eurogiciel-oss/Tizen-development-report/issues
+
 # TO DO
 
 * Allow usage of alternate json parsers (underscore-cli https://github.com/ddopson/underscore-cli)
 * Add a script that return stats from a csv file
 * Add more fields in the csv file (gerrit-owner...)
 * Add an uninstall script
-* get-gerrit-status-open fails to parse https://review.tizen.org/gerrit/#/c/16751/
 * Improve documentation
 
 # License
