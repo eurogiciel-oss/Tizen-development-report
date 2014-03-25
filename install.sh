@@ -23,6 +23,6 @@ install scripts/gerrit/* $BINDIR
 install scripts/repo/* $BINDIR
 
 # Global scripts
-install scripts/global/* $BINDIR
+install scripts/main/* $BINDIR
 
 exit 0
