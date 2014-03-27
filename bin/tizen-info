@@ -1,0 +1,377 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+#
+# Print help
+#
+help()
+{
+    echo
+    echo "Return the current status of the commits matching the given parameters."
+    echo
+    echo "Usage:"
+    echo "  $0 [search_options] [-t <template_file>] [-d <invalid_patterns_file>] [path_to_local_repository]"
+    echo
+    echo "Notes:"
+    echo "  * At least one search option should be specified."
+    echo "  * This script requires the json parser jq (http://stedolan.github.io/jq/)."
+    echo
+    echo "Search options:"
+    echo "  -b <branch>                Specify the branch."
+    echo "  -c <commit>                Specify the commit."
+    echo "  -f <regexp>                Only results of the Gerrit query matching the regexp are returned."
+    echo "  -h                         Display this help."
+    echo "  -i <change-id>             Specify the change-id."
+    echo "  -p <project>               Specify the project."
+    echo "  -q <Gerrit_query>          Specify a Gerrit query."
+    echo "  -s <Gerrit_status>         Specify the Gerrit status; statuses are: \"NEW\", \"MERGED\", \"ABANDONED\""
+    echo
+    echo "Templates:"
+    echo "  -t <template_file>         Result is displayed in the format specified in the template file."
+    echo
+    echo "  Availbale macros for the template files:"
+    echo "    __BRANCH__"
+    echo "    __CHANGEID__"
+    echo "    __COMMIT__"
+    echo "    __CREATED_DATE__"
+    echo "    __CREATED_TIME__"
+    echo "    __FILTER__"
+    echo "    __PROJECT__"
+    echo "    __STATUS__"
+    echo "    __UPDATED_DATE__"
+    echo "    __UPDATED_TIME__"
+    echo
+}
+
+#
+# Set the returned values to the values entered as parameter
+#
+set_result()
+{
+    if [ -n "$P_PROJECT" ]
+    then
+        PROJECT="$P_PROJECT"
+    fi
+
+    if [ -n "$P_BRANCH" ]
+    then
+        BRANCH="$P_BRANCH"
+    fi
+
+    if [ -n "$P_CHANGEID" ]
+    then
+        CHANGEID="$P_CHANGEID"
+    fi
+
+    if [ -n "$P_COMMIT" ]
+    then
+        COMMIT="$P_COMMIT"
+    fi
+}
+
+#
+# Query Gerrit
+#
+gerrit_query()
+{
+    if [ -n "$P_FILTER" ]
+    then
+        ssh review.tizen.org gerrit query --format json \""$QUERY"\" | grep -iE "$P_FILTER" > $GERRIT_INFO
+    else
+        ssh review.tizen.org gerrit query --format json \""$QUERY"\" > $GERRIT_INFO
+    fi
+}
+
+#
+# Get commit from change-id
+#
+get_repo_commit()
+{
+    cd $P_REPO/$PROJECT &> /dev/null
+    git checkout $BRANCH &> /dev/null
+
+    COMMIT=$(git log --grep="$CHANGEID" | head -n 1 | cut -f 2 -d ' ')
+
+    cd - &> /dev/null
+}
+
+#
+# Get commit status in git repo
+#
+get_repo_status()
+{
+    cd $P_REPO/$PROJECT &> /dev/null
+    git checkout $BRANCH &> /dev/null
+
+    # Check if it is accepted
+    COUNT=$(git tag --contains $COMMIT | grep -ci accepted)
+
+    if [ "$COUNT" -gt 0 ]
+    then
+        STATUS=$ACCEPTED
+    else
+        # If not accepted, check if it is submitted
+        COUNT=$(git tag --contains $COMMIT | grep -ci submit)
+        if [ "$COUNT" -gt 0 ]
+        then
+            STATUS=$SUBMITTED
+        fi
+    fi
+
+    cd - &> /dev/null
+}
+
+#
+# Format the time related results
+#
+format_date()
+{
+    DATE=$(date +%s)
+
+    CREATED_TIME=$((($DATE-$CREATED_DATE)/86400))
+    UPDATED_TIME=$((($DATE-$UPDATED_DATE)/86400))
+
+    CREATED_DATE=$(date -I --date="@$CREATED_DATE")
+    UPDATED_DATE=$(date -I --date="@$UPDATED_DATE")
+}
+
+#
+# Print result
+#
+print_result()
+{
+    if [ -n "$P_TEMPLATE" ]
+    then
+        TMPSIZE=$(stat -c%s "$P_TEMPLATE")
+    else
+        TMPSIZE=0
+    fi
+
+    if [ $TMPSIZE -ne 0 ]
+    then
+        cat $P_TEMPLATE |
+        sed -e "s!__BRANCH__!$BRANCH!g" \
+            -e "s!__PROJECT__!$PROJECT!g" \
+            -e "s!__COMMIT__!$COMMIT!g" \
+            -e "s!__CHANGEID__!$CHANGEID!g" \
+            -e "s!__FILTER__!$P_FILTER!g" \
+            -e "s!__STATUS__!$STATUS!g" \
+            -e "s!__CREATED_DATE__!$CREATED_DATE!g" \
+            -e "s!__UPDATED_DATE__!$UPDATED_DATE!g" \
+            -e "s!__CREATED_TIME__!$CREATED_TIME!g" \
+            -e "s!__UPDATED_TIME__!$UPDATED_TIME!g"
+        echo
+    else
+        echo "Project: $PROJECT"
+        echo "Branch: $BRANCH"
+        echo "Change-id: $CHANGEID"
+        echo "Commit: $COMMIT"
+        echo "Filter: $P_FILTER"
+        echo "Status: $STATUS"
+        echo "Created: $CREATED_DATE - $CREATED_TIME days ago"
+        echo "Updated: $UPDATED_DATE - $UPDATED_TIME days ago"
+    fi
+}
+
+# tizen-info requires at least one option and the path to the root of the git repos
+if [ "$#" -lt 2 ]
+then
+    help
+    exit 0
+fi
+
+# Parameters
+P_BRANCH=
+P_CHANGEID=
+P_COMMIT=
+P_FILTER=
+P_FORMAT=
+P_PROJECT=
+P_QUERY=
+P_REPO=
+P_STATUS=
+P_TEMPLATE=
+
+# Statuses (constants)
+ERROR="ERROR"
+UNKNOWN="NOT_FOUND"
+ABANDONED="ABANDONED"
+REVIEW="BEING_REVIEWED"
+MERGED="MERGED_NOT_SUBMITTED"
+SUBMITTED="SUBMITTED"
+ACCEPTED="ACCEPTED"
+
+# Return values
+PROJECT=
+BRANCH=
+STATUS=
+CREATED_DATE=
+UPDATED_DATE=
+CREATED_TIME=
+UPDATED_TIME=
+
+# Other
+QUERY=
+
+# Temporary files
+GERRIT_INFO=/tmp/tizen-info-gerrit-info.tmp
+GERRIT_INFO_FORMAT=/tmp/tizen-info-gerrit-info-format.tmp
+
+# Automatically delete temporary files when script ends
+trap "rm -f $GERRIT_INFO $GERRIT_INFO_FORMAT" EXIT
+
+# Store parameters in variables
+while getopts b:c:f:hi:p:q:s:t: OPTION
+do
+    case "$OPTION" in
+    b)
+        P_BRANCH=$OPTARG
+        ;;
+    c)
+        P_COMMIT=$OPTARG
+        ;;
+    f)
+        P_FILTER=$OPTARG
+        ;;
+    h)
+        help
+        exit 0
+        ;;
+    i)
+        P_CHANGEID=$OPTARG
+        ;;
+    p)
+        P_PROJECT=$OPTARG
+        ;;
+    q)
+        P_QUERY=$OPTARG
+        ;;
+    s)
+        P_STATUS=$OPTARG
+        ;;
+    t)
+        P_TEMPLATE=$OPTARG
+        ;;
+    esac
+done
+
+shift $(( OPTIND - 1 ));
+
+# Set repo
+P_REPO=$1
+
+# Create the Gerrit query
+QUERY=$P_QUERY
+
+if [ -n "$P_PROJECT" ]
+then
+    QUERY="$QUERY project:$P_PROJECT"
+fi
+
+if [ -n "$P_COMMIT" ]
+then
+    QUERY="$QUERY commit:$P_COMMIT"
+fi
+
+if [ -n "$P_CHANGEID" ]
+then
+    QUERY="$QUERY change:$P_CHANGEID"
+fi
+
+if [ -n "$P_BRANCH" ]
+then
+    QUERY="$QUERY branch:$P_BRANCH"
+fi
+
+if [ -n "$P_STATUS" ]
+then
+    QUERY="$QUERY status:$P_STATUS"
+fi
+
+# Get information from Gerrit
+gerrit_query
+
+# If Gerrit doesn't return any information
+TMPSIZE=$(stat -c%s "$GERRIT_INFO")
+if [ $TMPSIZE -eq 0 ]
+then
+    set_result
+    print_result
+    exit 0
+fi
+
+#echo removes the '\' before '"' which causes json parsing to fail, adding a second '\' before "\"" corrects this issue
+sed 's/\"/\\"/g' $GERRIT_INFO > $GERRIT_INFO_FORMAT
+
+while read RESULT;
+do
+    # If the result is the statistic of the Gerrit query
+    TYPE=$(echo $RESULT | jq ".type" | cut -f 2 -d '"')
+    if [ "$TYPE" == "stats" ]
+    then
+        continue
+    fi
+
+    set_result
+
+    if [ -z "$PROJECT" ]
+    then
+        PROJECT=$(echo $RESULT | jq ".project" | cut -f 2 -d '"')
+    fi
+
+    if [ -z "$BRANCH" ]
+    then
+        BRANCH=$(echo $RESULT | jq ".branch" | cut -f 2 -d '"')
+    fi
+
+    if [ -z "$CHANGEID" ]
+    then
+        CHANGEID=$(echo $RESULT | jq ".id" | cut -f 2 -d '"')
+    fi
+
+    CREATED_DATE=$(echo $RESULT | jq ".createdOn" | cut -f 2 -d '"')
+    UPDATED_DATE=$(echo $RESULT | jq ".lastUpdated" | cut -f 2 -d '"')
+
+    format_date
+
+    STATUS_TMP=$(echo $RESULT | jq ".status" | cut -f 2 -d '"')
+
+    case "$STATUS_TMP" in
+    "NEW")
+        STATUS=$REVIEW
+        ;;
+    "MERGED")
+        STATUS=$MERGED
+        # Gerrit status=merged, we need to check if it is submitted and accepted if a path to a local repo has been given
+        if [ -n "$P_REPO" ]
+        then
+
+            # Get the commit ID based on the change ID
+            if [ -z "$COMMIT" ]
+            then
+                get_repo_commit
+            fi
+
+            # Get the status of the commit
+            get_repo_status
+        fi
+        ;;
+    "ABANDONED")
+        STATUS=$ABANDONED
+        ;;
+    *)
+        # This shouldn't happen
+        STATUS=$ERROR
+        ;;
+    esac
+
+    print_result
+
+done < $GERRIT_INFO_FORMAT
+
+exit 0

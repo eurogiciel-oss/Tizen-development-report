@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+help()
+{
+    echo
+    echo "Return commits status for each entry in the input file"
+    echo ""
+    echo "Usage:"
+    echo "  tizen-info-multiuser <path_to_local_repo> <input_file> <invalid_bugs_list> <template>"
+    echo
+    echo "  <input_file>        File containing a list of couples: \"bug ID\" \"project\"."
+    echo "  <invalid_bugs_list> File containing a list of \"bug ID\"."
+    echo "  <template>          A template file for the returned values, see \"tizen-info -h\" for more information."
+    echo
+}
+
+if [ "$#" -ne 4 ]
+then
+    help
+    exit 0
+fi
+
+REPO=$1
+INPUT=$2
+INVALID=$3
+TEMPLATE=$4
+
+i=1
+DATA=`cat $INPUT`
+for FIELD in $DATA ;
+do
+    if [ $i -eq 1 ]
+    then
+        BUG="$(echo $FIELD | cut -f 1 -d '-').*$(echo $FIELD | cut -f 2 -d '-')"
+        i=0
+    else
+        PROJECT=$FIELD
+        tizen-info -p $PROJECT -f $BUG -t $TEMPLATE $REPO
+        i=1
+    fi
+done
+
+exit 0
