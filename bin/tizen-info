@@ -45,6 +45,7 @@ help()
     echo "    __STATUS__"
     echo "    __UPDATED_DATE__"
     echo "    __UPDATED_TIME__"
+    echo "    __URL__"
     echo
 }
 
@@ -164,7 +165,8 @@ print_result()
             -e "s!__CREATED_DATE__!$CREATED_DATE!g" \
             -e "s!__UPDATED_DATE__!$UPDATED_DATE!g" \
             -e "s!__CREATED_TIME__!$CREATED_TIME!g" \
-            -e "s!__UPDATED_TIME__!$UPDATED_TIME!g"
+            -e "s!__UPDATED_TIME__!$UPDATED_TIME!g" \
+            -e "s(__URL__($URL(g"
         echo
     else
         echo "Project: $PROJECT"
@@ -175,6 +177,7 @@ print_result()
         echo "Status: $STATUS"
         echo "Created: $CREATED_DATE - $CREATED_TIME days ago"
         echo "Updated: $UPDATED_DATE - $UPDATED_TIME days ago"
+        echo "URL: $URL"
     fi
 }
 
@@ -214,6 +217,7 @@ CREATED_DATE=
 UPDATED_DATE=
 CREATED_TIME=
 UPDATED_TIME=
+URL=
 
 # Other
 QUERY=
@@ -319,20 +323,11 @@ do
 
     set_result
 
-    if [ -z "$PROJECT" ]
-    then
-        PROJECT=$(echo $RESULT | jq ".project" | cut -f 2 -d '"')
-    fi
+    PROJECT=$(echo $RESULT | jq ".project" | cut -f 2 -d '"')
+    BRANCH=$(echo $RESULT | jq ".branch" | cut -f 2 -d '"')
+    CHANGEID=$(echo $RESULT | jq ".id" | cut -f 2 -d '"')
 
-    if [ -z "$BRANCH" ]
-    then
-        BRANCH=$(echo $RESULT | jq ".branch" | cut -f 2 -d '"')
-    fi
-
-    if [ -z "$CHANGEID" ]
-    then
-        CHANGEID=$(echo $RESULT | jq ".id" | cut -f 2 -d '"')
-    fi
+    URL="https://review.tizen.org/gerrit/#/c/"$(echo $RESULT | jq ".number" | cut -f 2 -d '"')
 
     CREATED_DATE=$(echo $RESULT | jq ".createdOn" | cut -f 2 -d '"')
     UPDATED_DATE=$(echo $RESULT | jq ".lastUpdated" | cut -f 2 -d '"')
