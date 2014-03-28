@@ -36,4 +36,9 @@ install -d $DATADIR/tizen-info/gerrit/templates
 install gerrit/bin/* $BINDIR
 install gerrit/templates/* $DATADIR/tizen-info/gerrit/templates
 
+# Manifest
+install -d $DATADIR/tizen-info/manifest/templates
+install manifest/bin/* $BINDIR
+install manifest/templates/* $DATADIR/tizen-info/manifest/templates
+
 exit 0

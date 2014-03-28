@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+help()
+{
+    echo
+    echo "Usage:"
+    echo "  $0 <path_to_local_repo> <projects_list> <authors_number>\"."
+    echo
+}
+
+if [ "$#" -ne 3 ]
+then
+    help
+    exit 0
+fi
+
+REPO=$1
+INPUT=$2
+NUMBER=$3
+BRANCH="tizen"
+
+DATA=`cat $INPUT`
+echo $DATA
+for PROJECT in $DATA ;
+do
+    tizen-authors $REPO $PROJECT $BRANCH $NUMBER
+done
+
+exit 0

@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+if [ "$#" -ne 4 ]
+then
+    echo
+    echo "Return the authors of a project sorted by the number of lines modified. Only the Nth most important authors are returned."
+    echo
+    echo "Usage: \"get-authors <path_to_repo> <project> <branch> <number_of_authors>\""
+    echo
+    exit 0
+fi
+
+REPO=$1
+PROJECT=$2
+BRANCH=$3
+NUMBER=$4
+
+# Temporary files
+AUTHORS=/tmp/repo-authors.tmp
+STATS_COMMITS=/tmp/repo-authors-stats-commits.tmp
+STATS_LINES=/tmp/repo-authors-stats-lines.tmp
+STATS_COMMITS_FORMAT=/tmp/repo-authors-stats-commits-format.tmp
+STATS_LINES_FORMAT=/tmp/repo-authors-stats-lines-format.tmp
+
+# Automatically delete temporary files when script ends
+trap "rm -f $AUTHORS $STATS_COMMITS $STATS_LINES $STATS_COMMITS_FORMAT $STATS_LINES_FORMAT" EXIT
+
+# Get the list of authors and the number of commits for each of them
+cd $REPO/$PROJECT &> /dev/null
+git checkout $BRANCH &> /dev/null
+git shortlog -n -s > $AUTHORS
+
+# Get the total number of commits
+COMMITS=$(git rev-list HEAD --count)
+
+while read LINE;
+do
+    # Get the author and the number of commits
+    COMMITS_N=$(echo $LINE | cut -f 1 -d ' ')
+    AUTHOR=$(echo $LINE | cut -f 2- -d ' ')
+
+    ADDED_LINES=$(git log --author="$AUTHOR" --pretty=tformat: --numstat | gawk '{ add += $1 } END { printf "%s",add}' -)
+
+    echo $COMMITS_N~$AUTHOR >> $STATS_COMMITS
+    echo $ADDED_LINES~$AUTHOR >> $STATS_LINES
+
+done < $AUTHORS
+
+cd - &> /dev/null
+
+# Sort the results and only keep the N first
+cat $STATS_COMMITS | sort -g -r | head -n $NUMBER > $STATS_COMMITS_FORMAT
+cat $STATS_LINES | sort -g -r | head -n $NUMBER > $STATS_LINES_FORMAT
+
+paste -d '~' $STATS_COMMITS_FORMAT $STATS_LINES_FORMAT | sed s!^!$PROJECT~!
+
+exit 0
+
+
+

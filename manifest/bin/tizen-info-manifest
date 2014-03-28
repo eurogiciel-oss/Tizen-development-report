@@ -1,0 +1,37 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+if [ "$#" -ne 3 ]
+then
+    echo ""
+    echo "Return <project>,<branch>,<changeid>,<commit>,<status> (csv format) for each revision in the input file"
+    echo ""
+    echo "Usage: \"get-status-revision-loop <path_to_local_repo> <manifest.xml> <template>\""
+    echo ""
+    exit 0
+fi
+
+REPO=$1
+MANIFEST=$2
+TEMPLATE=$3
+
+# Temporary file
+REVISIONS=/tmp/revisions.tmp
+
+# Automatically delete temporary file when script ends
+trap "rm -f $REVISIONS" EXIT
+
+xmllint --xpath '//manifest/project' $MANIFEST | tr ' ' '\n' | grep revision | cut -f 2 -d '"' > $REVISIONS
+
+DATA=`cat $REVISIONS`
+for REVISION in $DATA ;
+do
+    tizen-info -c $REVISION -t $TEMPLATE $REPO
+done
+
+exit 0
