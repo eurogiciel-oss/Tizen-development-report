@@ -73,6 +73,8 @@ set_result()
     then
         COMMIT="$P_COMMIT"
     fi
+
+    STATUS="NOT_FOUND"
 }
 
 #
@@ -213,6 +215,7 @@ ACCEPTED="ACCEPTED"
 PROJECT=
 BRANCH=
 STATUS=
+COMMIT=
 CREATED_DATE=
 UPDATED_DATE=
 CREATED_TIME=
