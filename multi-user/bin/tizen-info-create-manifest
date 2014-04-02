@@ -1,0 +1,40 @@
+#!/bin/bash
+
+#
+# Copyright (c) 2014 Kévin THIERRY <kevin.thierry@open.eurogiciel.org>
+#
+# See the file LICENSE for copying permission.
+#
+
+help()
+{
+    echo
+    echo "Generates a manifest file."
+    echo ""
+    echo "Usage:"
+    echo "  $0 <path_to_local_repo> <input_file> <invalid_bugs_list> <template>"
+    echo
+    echo "  <input_file>        File containing a list of couples: \"bug ID\" \"project\"."
+    echo "  <invalid_bugs_list> File containing a list of \"bug ID\"."
+    echo "  <template>          A template file for the returned values, see \"tizen-info -h\" for more information."
+    echo
+}
+
+if [ "$#" -ne 4 ]
+then
+    help
+    exit 0
+fi
+
+REPO=$1
+INPUT=$2
+INVALID=$3
+TEMPLATE=$4
+
+echo "<manifest xmlns:tz=\"http://tizen.org\">"
+echo "  <remote fetch=\"ssh://review.tizen.org\" name=\"tizen-gerrit\" review=\"https://review.tizen.org/gerrit\"/>"
+echo "  <remote fetch=\"ssh://git@github.com\" name=\"github\"/>"
+echo "  <default remote=\"tizen-gerrit\"/>"
+echo
+tizen-info-multiuser $REPO $INPUT $INVALID $TEMPLATE | grep -E -A 2 "SUBMITTED|BEING_REVIEWED"
+echo "</manifest>"
