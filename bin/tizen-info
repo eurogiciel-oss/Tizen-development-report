@@ -30,6 +30,7 @@ help()
     echo "  -p <project>               Specify the project."
     echo "  -q <Gerrit_query>          Specify a Gerrit query."
     echo "  -s <Gerrit_status>         Specify the Gerrit status; statuses are: \"NEW\", \"MERGED\", \"ABANDONED\""
+    echo "  -u                         Update repo before getting information."
     echo
     echo "Templates:"
     echo "  -t <template_file>         Result is displayed in the format specified in the template file."
@@ -92,18 +93,34 @@ gerrit_query()
 }
 
 #
-# Get commit from change-id
+# Update local repo
+#
+update_repo()
+{
+    cd $P_REPO/$PROJECT &> /dev/null
+    git checkout $BRANCH &> /dev/null
+    git fetch --all -p &> /dev/null
+    cd - &> /dev/null
+}
+
+#
+# Get commit
 #
 get_repo_commit()
 {
-    #cd $P_REPO/$PROJECT &> /dev/null
-    #git checkout $BRANCH &> /dev/null
+    if [ -n $P_REPO ]
+    then
+        cd $P_REPO/$PROJECT &> /dev/null
+        git checkout $BRANCH &> /dev/null
 
-    #COMMIT=$(git log --grep="$CHANGEID" | head -n 1 | cut -f 2 -d ' ')
+        COMMIT=$(git log --grep="$CHANGEID" | head -n 1 | cut -f 2 -d ' ')
 
-    #cd - &> /dev/null
-
-    COMMIT=$(tail -n 1 <(git ls-remote review.tizen.org:$PROJECT | grep refs/changes/${NUMBER:(-2)}/$NUMBER) | cut -f 1)
+        cd - &> /dev/null
+    fi
+    if [ "$COMMIT" == "" ]
+    then
+        COMMIT=$(tail -n 1 <(git ls-remote review.tizen.org:$PROJECT | grep refs/changes/${NUMBER:(-2)}/$NUMBER) | cut -f 1)
+    fi
 }
 
 #
@@ -205,6 +222,7 @@ P_QUERY=
 P_REPO=
 P_STATUS=
 P_TEMPLATE=
+P_UPDATE=0
 
 # Statuses (constants)
 ERROR="ERROR"
@@ -238,7 +256,7 @@ GERRIT_INFO_FORMAT=/tmp/tizen-info-gerrit-info-format.tmp
 trap "rm -f $GERRIT_INFO $GERRIT_INFO_FORMAT" EXIT
 
 # Store parameters in variables
-while getopts b:c:f:hi:p:q:s:t: OPTION
+while getopts b:c:f:hi:p:q:s:t:u OPTION
 do
     case "$OPTION" in
     b)
@@ -268,6 +286,9 @@ do
         ;;
     t)
         P_TEMPLATE=$OPTARG
+        ;;
+    u)
+        P_UPDATE=1
         ;;
     esac
 done
@@ -346,8 +367,17 @@ do
 
     STATUS_TMP=$(echo $RESULT | jq ".status" | cut -f 2 -d '"')
 
+    # Update the repo
+    if [ "$P_UPDATE" -eq 1 ]
+    then
+        update_repo
+    fi
+
     # Update the commit ID
-    get_repo_commit
+    if [ -z "$P_COMMIT" ]
+    then
+        get_repo_commit
+    fi
 
     case "$STATUS_TMP" in
     "NEW")

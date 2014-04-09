@@ -41,7 +41,7 @@ do
         i=0
     else
         PROJECT=$FIELD
-        tizen-info -p $PROJECT -f $BUG -t $TEMPLATE $REPO
+        tizen-info -p $PROJECT -f $BUG -t $TEMPLATE -u $REPO
         i=1
     fi
 done
