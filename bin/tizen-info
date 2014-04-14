@@ -42,12 +42,14 @@ help()
     echo "    __CREATED_DATE__"
     echo "    __CREATED_TIME__"
     echo "    __FILTER__"
+    echo "    __NUMBER__"
+    echo "    __OWNER__"
     echo "    __PROJECT__"
     echo "    __STATUS__"
     echo "    __UPDATED_DATE__"
     echo "    __UPDATED_TIME__"
     echo "    __URL__"
-    echo "    __NUMBER__"
+
     echo
 }
 
@@ -132,14 +134,14 @@ get_repo_status()
     git checkout $BRANCH &> /dev/null
 
     # Check if it is accepted
-    COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "accepted\/tizen\/[0-9]*\.[0-9]*")
+    COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(accepted\/tizen\/[0-9]*\.[0-9]*)|(accepted\/tizen\/generic\/[0-9]*\.[0-9]*)")
 
     if [ "$COUNT" -gt 0 ]
     then
         STATUS=$ACCEPTED
     else
         # If not accepted, check if it is submitted
-        COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "submit\/tizen\/[0-9]*\.[0-9]*")
+        COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(submit\/tizen\/[0-9]*\.[0-9]*)|(submit\/tizen\/generic\/[0-9]*\.[0-9]*)")
         if [ "$COUNT" -gt 0 ]
         then
             STATUS=$SUBMITTED
@@ -184,6 +186,7 @@ print_result()
             -e "s!__CHANGEID__!$CHANGEID!g" \
             -e "s!__FILTER__!$P_FILTER!g" \
             -e "s!__STATUS__!$STATUS!g" \
+            -e "s!__OWNER__!$OWNER!g" \
             -e "s!__CREATED_DATE__!$CREATED_DATE!g" \
             -e "s!__UPDATED_DATE__!$UPDATED_DATE!g" \
             -e "s!__CREATED_TIME__!$CREATED_TIME!g" \
@@ -196,6 +199,7 @@ print_result()
         echo "Branch: $BRANCH"
         echo "Change-id: $CHANGEID"
         echo "Commit: $COMMIT"
+        echo "Owner: $OWNER"
         echo "Filter: $P_FILTER"
         echo "Status: $STATUS"
         echo "Created: $CREATED_DATE - $CREATED_TIME days ago"
@@ -244,6 +248,7 @@ CREATED_TIME=
 UPDATED_TIME=
 URL=
 NUMBER=
+OWNER=
 
 # Other
 QUERY=
@@ -357,6 +362,8 @@ do
     CHANGEID=$(echo $RESULT | jq ".id" | cut -f 2 -d '"')
 
     NUMBER=$(echo $RESULT | jq ".number" | cut -f 2 -d '"')
+
+    OWNER=$(echo $RESULT | jq ".owner" | jq ".username" | cut -f 2 -d '"')
 
     URL="https://review.tizen.org/gerrit/#/c/$NUMBER"
 
