@@ -214,8 +214,7 @@ print_result()
             -e "s!__UPDATED_TIME__!$UPDATED_TIME!g" \
             -e "s!__NUMBER__!$NUMBER!g" \
             -e "s!__URL__!$URL!g" \
-            -e "s(__REBASE__($REBASE_STATUS(g"
-        echo
+            -e "s!__REBASE__!$REBASE_STATUS!g" 
     else
         echo "Project: $PROJECT"
         echo "Branch: $BRANCH"
