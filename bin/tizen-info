@@ -30,6 +30,7 @@ help()
     echo "  -p <project>               Specify the project."
     echo "  -q <Gerrit_query>          Specify a Gerrit query."
     echo "  -s <Gerrit_status>         Specify the Gerrit status; statuses are: \"NEW\", \"MERGED\", \"ABANDONED\""
+    echo "  -r                         Check if rebase is needed"
     echo "  -u                         Update repo before getting information."
     echo
     echo "Templates:"
@@ -49,6 +50,7 @@ help()
     echo "    __UPDATED_DATE__"
     echo "    __UPDATED_TIME__"
     echo "    __URL__"
+    echo "    __REBASE__"
 
     echo
 }
@@ -152,6 +154,25 @@ get_repo_status()
 }
 
 #
+# Get Rebase status in git repo
+#
+get_rebase_status()
+{
+	cd $P_REPO/$PROJECT &> /dev/null
+	git fetch origin +refs/changes/*:refs/remotes/origin/changes/* &> /dev/null
+
+	PARENT=$(git --no-pager show --quiet --pretty=format:"%P" $COMMIT 2> /dev/null)
+	HEAD=$(git --no-pager show --quiet --pretty=format:"%H" origin/tizen 2> /dev/null)
+
+	if [ "$PARENT" != "$HEAD" ]
+	then
+		REBASE_STATUS=$REBASE
+	fi
+
+	git fetch -p &> /dev/null
+}
+
+#
 # Format the time related results
 #
 format_date()
@@ -192,7 +213,8 @@ print_result()
             -e "s!__CREATED_TIME__!$CREATED_TIME!g" \
             -e "s!__UPDATED_TIME__!$UPDATED_TIME!g" \
             -e "s!__NUMBER__!$NUMBER!g" \
-            -e "s(__URL__($URL(g"
+            -e "s!__URL__!$URL!g" \
+            -e "s(__REBASE__($REBASE_STATUS(g"
         echo
     else
         echo "Project: $PROJECT"
@@ -205,6 +227,7 @@ print_result()
         echo "Created: $CREATED_DATE - $CREATED_TIME days ago"
         echo "Updated: $UPDATED_DATE - $UPDATED_TIME days ago"
         echo "URL: $URL"
+	echo "Rebase: $REBASE_STATUS"
     fi
 }
 
@@ -227,6 +250,7 @@ P_REPO=
 P_STATUS=
 P_TEMPLATE=
 P_UPDATE=0
+P_REBASE=0
 
 # Statuses (constants)
 ERROR="ERROR"
@@ -236,6 +260,7 @@ REVIEW="BEING_REVIEWED"
 MERGED="MERGED_NOT_SUBMITTED"
 SUBMITTED="SUBMITTED"
 ACCEPTED="ACCEPTED"
+REBASE="REBASE_NEEDED"
 
 # Return values
 PROJECT=
@@ -249,6 +274,9 @@ UPDATED_TIME=
 URL=
 NUMBER=
 OWNER=
+PARENT=
+HEAD=
+REBASE_STATUS=
 
 # Other
 QUERY=
@@ -286,6 +314,9 @@ do
     q)
         P_QUERY=$OPTARG
         ;;
+    r)
+	P_REBASE=1
+	;;
     s)
         P_STATUS=$OPTARG
         ;;
@@ -389,6 +420,10 @@ do
     case "$STATUS_TMP" in
     "NEW")
         STATUS=$REVIEW
+	if [ -z "$P_RABASE" ]
+	then
+		get_rebase_status
+	fi
         ;;
     "MERGED")
         STATUS=$MERGED
