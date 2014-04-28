@@ -17,7 +17,7 @@ help()
     echo "<template> can contains any macro listed by \"tizen-info -h\" plus the macro \"__GERRIT_ACTION__\" which will take different values according to their status. Values are:"
     echo "  * TO_MERGE"
     echo "  * TO_REVIEW"
-    echo "..* TO_VERIFY"
+    echo "  * TO_VERIFY"
     echo "  * TO_REVIEW_AND_VERIFY"
     echo "  * INVALID"
     echo
