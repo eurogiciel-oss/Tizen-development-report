@@ -104,6 +104,7 @@ update_repo()
     cd $P_REPO/$PROJECT &> /dev/null
     git checkout $BRANCH &> /dev/null
     git fetch --all -p &> /dev/null
+    git rebase &> /dev/null
     cd - &> /dev/null
 }
 
