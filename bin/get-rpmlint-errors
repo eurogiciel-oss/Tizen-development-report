@@ -1,0 +1,120 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2014 Intel, Inc.
+# License: GPLv2
+# Authors: Ronan Le Martret <ronan.lemartret@open.eurogiciel.org>
+# Authors: Kevin Thierry <kevin.thierry@open.eurogiciel.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+
+SHOW_HELP="no"
+URL=""
+DIR=./log_files
+
+if [ "$#" -eq 0 ]
+then
+ SHOW_HELP="yes"
+fi
+
+while test $# -gt 0; do
+  case $1 in
+    *-help)
+      SHOW_HELP="yes"
+      shift
+    ;;
+    *-h)
+      SHOW_HELP="yes"
+      shift
+    ;;
+    *-dir)
+      DIR=$2
+      shift
+      shift
+    ;;
+    *-url)
+      URL=$2
+      shift
+      shift
+    ;;
+    *)
+      echo "Unknown parameter $1."
+      echo "This script is not accepting this parameter currently."
+      exit 1
+    ;;
+  esac
+done
+
+
+if [ ${SHOW_HELP} != "no" ]; then
+    echo "Usage: $0 --dir <local dir containing build logs default=./log_files> --url <url containing build logs>"
+    echo ""
+    echo "If option --url is used, log files are download to local  dir."
+    echo ""
+    echo "Example: $0 --url http://download.tizen.org/snapshots/tizen/common/latest/builddata/buildlogs/x86_64-wayland/x86_64/succeeded"
+    echo "Example: $0 --dir ./log_files --url http://download.tizen.org/snapshots/tizen/ivi/latest/builddata/buildlogs/atom/i586/succeeded"
+    echo "Example: $0 --dir ./log_files"
+    exit 0
+fi
+
+if [ ! -z ${URL} ]
+then
+    mkdir -p ${DIR}
+    wget --directory-prefix=./log_files --reject index.html* --mirror --no-parent --no-host-directories --cut-dirs=9 ${URL}
+fi
+
+FILES=$(ls $DIR)
+
+echo -e 'Pkg Name '\\t'RPMLINT errors'\\t'RPMLINT warnings'\\t'macro-in-comment warnings'\\t'non-standard-group'\\t'license-file-in-docs'\\t'non-conffile-in-etc'\\t'subdir-in-bin'\\t'description-shorter-than-summary'\\t'script-without-shebang'\\t'files-duplicate'\\t'invalid-license'\\t'non-standard-gid'      
+
+for file in $FILES
+do
+    
+    FILENAME=$(echo $file | sed 's/.buildlog.txt//')
+    
+    #Count Errors and Warning
+    RPMLINT_RESULT=$(grep -o "packages and 0 specfiles checked; [0-9]* errors, [0-9]* warnings." $DIR/$file)
+    
+    ERROR=$(echo $RPMLINT_RESULT | cut -d ' ' -f 6)
+    WARNING=$(echo $RPMLINT_RESULT | cut -d ' ' -f 8)
+    
+    #Count num of macro in comment in the spec file
+    MACROERRO=$(grep  "macro-in-comment"  $DIR/$file | wc -l)
+    
+    #Count num of non standard group in the spec file
+    GRPERRO=$(grep  "non-standard-group"  $DIR/$file | wc -l)
+    
+    #Count num of license file in docs in the spec file
+    DOCERRO=$(grep  "license-file-in-docs"  $DIR/$file | wc -l)
+    
+    #Count num of non conffile in etc in the spec file
+    CNFERRO=$(grep  "non-conffile-in-etc"  $DIR/$file | wc -l)
+    
+    #Count num of subdir in bin in the spec file
+    BINERRO=$(grep  "subdir-in-bin"  $DIR/$file | wc -l)
+    
+    #Count num of description shorter than summary in the spec file
+    DSCERRO=$(grep  "description-shorter-than-summary"  $DIR/$file | wc -l)
+    
+    #Count num of script without shebang in the spec file
+    SPTERRO=$(grep  "script-without-shebang"  $DIR/$file | wc -l)
+    
+    #Count num of files duplicate in the spec file
+    FDPERRO=$(grep  'files-duplicate'  $DIR/$file | wc -l)
+    
+    #Count num of invalid license in the spec file
+    LCSERRO=$(grep  'invalid-license'  $DIR/$file | wc -l)
+    
+    #Count num of non standard-gid in the spec file
+    NSGERRO=$(grep  'non-standard-gid' $DIR/$file | wc -l)
+    
+    #Print result
+    echo -e $FILENAME\\t$ERROR\\t$WARNING\\t$MACROERRO\\t$GRPERRO\\t$DOCERRO\\t$CNFERRO\\t$BINERRO\\t$DSCERRO\\t$SPTERRO\\t$FDPERRO\\t$LCSERRO\\t$NSGERRO
+done
