@@ -29,17 +29,38 @@ except:
     
 import sys
     
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
     
 def cleanYoctoVer(s):
   return s.split(":")[-1]
+
+def isNewerRev(src_rev, cnd_rev):
+  splited_src=src_rev.split(".")
+  splited_cnd=cnd_rev.split(".")
+  for i in range(len(splited_src)):
+    if i < len(splited_cnd):
+      v_src=splited_src[i].split("+")[0].split("git")[0].split("p")[0].split("a")[0].split("_")[0].split("r")[0].split("c")[0].split("-")[0]
+      c_src=splited_cnd[i].split("+")[0].split("git")[0].split("p")[0].split("a")[0].split("_")[0].split("r")[0].split("c")[0].split("-")[0]
+      
+      if is_number(v_src) and is_number(c_src):
+        if int(v_src) > int(c_src) :
+          return True
+        elif int(v_src) < int(c_src) :
+          return False 
+  return False
 
 def getYoctoMax(listVer):
   if len(listVer) == 0:
     return "None"
   
-  ver="0"
+  ver="0.0.0"
   for v in listVer:
-    if v>ver:
+    if isNewerRev(v,ver):
       ver=v
   return ver
 
@@ -110,6 +131,7 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
         
         imagePackagesListFile= open(opts.ImagePackagesList,"r")
         imagePkg={}
+        imagePkg_version={}
         for line in imagePackagesListFile:
             line = line.replace("\n","")
             rpm_name=line.split(".src.rpm")[0]
@@ -122,6 +144,7 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
                 imagePkg[name]='Tizen'
             else:
                 imagePkg[name]='Yocto'
+                imagePkg_version[name]=version
         imagePackagesListFile.close()
         
         resList=imagePkg.keys()
@@ -135,21 +158,24 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
           if k in yoctoPkg.keys():
             yoctoV=getYoctoMax(yoctoPkg[k])
           else:
-            yoctoV="None"
+            if k in imagePkg_version.keys() :
+              yoctoV=imagePkg_version[k]
+            else:
+              yoctoV="None"
           
           status=""
           if yoctoV == "None":
               status="-"
           elif tizenV == "None":
               status="-"
-          elif tizenV > yoctoV:
-              status="newer"
-          elif tizenV < yoctoV:
-              status="older"
           elif tizenV == yoctoV:
               status="sync"
+          elif isNewerRev(tizenV , yoctoV):
+              status="newer"
+          else :
+              status="older"
               
-          print "%s\t%s\t%s\t%s\t%s" % (k,imagePkg[k],tizenV,yoctoV,status)
+          print "%s\t%s\t%s\t%s\t%s" % (k, imagePkg[k], tizenV, yoctoV, status)
 
 
 def main():
