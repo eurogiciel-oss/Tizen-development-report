@@ -72,7 +72,7 @@ fi
 
 FILES=$(ls $DIR)
 
-echo -e 'Pkg Name '\\t'RPMLINT errors'\\t'RPMLINT warnings'\\t'macro-in-comment warnings'\\t'non-standard-group'\\t'license-file-in-docs'\\t'non-conffile-in-etc'\\t'subdir-in-bin'\\t'description-shorter-than-summary'\\t'script-without-shebang'\\t'files-duplicate'\\t'invalid-license'\\t'non-standard-gid'      
+echo -e 'Pkg Name '\\t'RPMLINT errors'\\t'RPMLINT warnings'\\t'macro-in-comment warnings'\\t'non-standard-group'\\t'license-file-in-docs'\\t'non-conffile-in-etc'\\t'subdir-in-bin'\\t'description-shorter-than-summary'\\t'script-without-shebang'\\t'files-duplicate'\\t'invalid-license'\\t'non-standard-gid'\\t'file-not-in-%lang'      
 
 for file in $FILES
 do
@@ -115,6 +115,10 @@ do
     #Count num of non standard-gid in the spec file
     NSGERRO=$(grep  'non-standard-gid' $DIR/$file | wc -l)
     
+    #Count num of file not in %lang in the spec file
+    LANGERRO=$(grep  'file-not-in-%lang' $DIR/$file | wc -l)
+    
+    
     #Print result
-    echo -e $FILENAME\\t$ERROR\\t$WARNING\\t$MACROERRO\\t$GRPERRO\\t$DOCERRO\\t$CNFERRO\\t$BINERRO\\t$DSCERRO\\t$SPTERRO\\t$FDPERRO\\t$LCSERRO\\t$NSGERRO
+    echo -e $FILENAME\\t$ERROR\\t$WARNING\\t$MACROERRO\\t$GRPERRO\\t$DOCERRO\\t$CNFERRO\\t$BINERRO\\t$DSCERRO\\t$SPTERRO\\t$FDPERRO\\t$LCSERRO\\t$NSGERRO\\t$LANGERRO
 done
