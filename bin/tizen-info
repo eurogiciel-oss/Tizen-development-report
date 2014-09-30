@@ -29,6 +29,7 @@ help()
     echo "  -i <change-id>             Specify the change-id."
     echo "  -p <project>               Specify the project."
     echo "  -q <Gerrit_query>          Specify a Gerrit query."
+    echo "  -r                         Rebase."
     echo "  -s <Gerrit_status>         Specify the Gerrit status; statuses are: \"NEW\", \"MERGED\", \"ABANDONED\""
     echo "  -r                         Check if rebase is needed"
     echo "  -u                         Update repo before getting information."
@@ -144,27 +145,26 @@ get_repo_status()
         STATUS=$ACCEPTED
     else
 
-	# Check if it is accepted on common
-	COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(accepted\/tizen\/[0-9]*\.[0-9]*)|(accepted\/tizen\/common\/[0-9]*\.[0-9]*)")
-	if [ "$COUNT" -gt 0 ]
-	then
-		STATUS=$ACCEPTED
-	else
-
-	        # If not accepted, check if it is submitted
-		COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(submit\/tizen\/[0-9]*\.[0-9]*)|(submit\/tizen\/generic\/[0-9]*\.[0-9]*)")
-	        if [ "$COUNT" -gt 0 ]
-	        then
-			STATUS=$SUBMITTED
-		else
-			# If not accepted, check if it is submitted
-			COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(submit\/tizen\/[0-9]*\.[0-9]*)|(submit\/tizen\/common\/[0-9]*\.[0-9]*)")
-			if [ "$COUNT" -gt 0 ]
-			then
-				STATUS=$SUBMITTED
-			fi
-		fi
-	fi
+    # Check if it is accepted on common
+    COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(accepted\/tizen\/[0-9]*\.[0-9]*)|(accepted\/tizen\/common\/[0-9]*\.[0-9]*)")
+    if [ "$COUNT" -gt 0 ]
+    then
+        STATUS=$ACCEPTED
+    else
+        # If not accepted, check if it is submitted
+        COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(submit\/tizen\/[0-9]*\.[0-9]*)|(submit\/tizen\/generic\/[0-9]*\.[0-9]*)")
+        if [ "$COUNT" -gt 0 ]
+        then
+            STATUS=$SUBMITTED
+        else
+            # If not accepted, check if it is submitted
+            COUNT=$(git tag --contains $COMMIT 2> /dev/null | grep -Ec "(submit\/tizen\/[0-9]*\.[0-9]*)|(submit\/tizen\/common\/[0-9]*\.[0-9]*)")
+            if [ "$COUNT" -gt 0 ]
+            then
+                STATUS=$SUBMITTED
+            fi
+        fi
+    fi
     fi
 
     cd - &> /dev/null
@@ -175,18 +175,18 @@ get_repo_status()
 #
 get_rebase_status()
 {
-	cd $P_REPO/$PROJECT &> /dev/null
-	git fetch origin +refs/changes/*:refs/remotes/origin/changes/* &> /dev/null
+    cd $P_REPO/$PROJECT &> /dev/null
+    git fetch origin +refs/changes/*:refs/remotes/origin/changes/* &> /dev/null
 
-	PARENT=$(git --no-pager show --quiet --pretty=format:"%P" $COMMIT 2> /dev/null)
-	HEAD=$(git --no-pager show --quiet --pretty=format:"%H" origin/tizen 2> /dev/null)
+    PARENT=$(git --no-pager show --quiet --pretty=format:"%P" $COMMIT 2> /dev/null)
+    HEAD=$(git --no-pager show --quiet --pretty=format:"%H" origin/tizen 2> /dev/null)
 
-	if [ "$PARENT" != "$HEAD" ]
-	then
-		REBASE_STATUS=$REBASE
-	fi
+    if [ "$PARENT" != "$HEAD" ]
+    then
+        REBASE_STATUS=$REBASE
+    fi
 
-	git fetch -p &> /dev/null
+    git fetch -p &> /dev/null
 }
 
 #
@@ -231,7 +231,8 @@ print_result()
             -e "s!__UPDATED_TIME__!$UPDATED_TIME!g" \
             -e "s!__NUMBER__!$NUMBER!g" \
             -e "s!__URL__!$URL!g" \
-            -e "s!__REBASE__!$REBASE_STATUS!g" 
+            -e "s!__REBASE__!$REBASE_STATUS!g"
+    echo
     else
         echo "Project: $PROJECT"
         echo "Branch: $BRANCH"
@@ -243,7 +244,7 @@ print_result()
         echo "Created: $CREATED_DATE - $CREATED_TIME days ago"
         echo "Updated: $UPDATED_DATE - $UPDATED_TIME days ago"
         echo "URL: $URL"
-	echo "Rebase: $REBASE_STATUS"
+        echo "Rebase: $REBASE_STATUS"
     fi
 }
 
@@ -331,8 +332,8 @@ do
         P_QUERY=$OPTARG
         ;;
     r)
-	P_REBASE=1
-	;;
+        P_REBASE=1
+        ;;
     s)
         P_STATUS=$OPTARG
         ;;
@@ -436,10 +437,10 @@ do
     case "$STATUS_TMP" in
     "NEW")
         STATUS=$REVIEW
-	if [ -z "$P_RABASE" ]
-	then
-		get_rebase_status
-	fi
+        if [ -z "$P_REBASE" ]
+        then
+            get_rebase_status
+        fi
         ;;
     "MERGED")
         STATUS=$MERGED
