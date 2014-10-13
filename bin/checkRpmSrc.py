@@ -41,7 +41,7 @@ def isFromIntel(patch_file) :
     if patch_file.endswith('.diff') or patch_file.endswith('.patch'):
       with open(patch_file,"r") as patch_fd:
         for line in patch_fd:
-          if line.startswith("From:") and (("intel.com" in line) or ("eurogiciel.org" in line)):
+          if line.startswith("From:") and (("intel.com" in line) or ("eurogiciel.org" in line) or ("fridu.org" in line)):
             return True
     return False
   
