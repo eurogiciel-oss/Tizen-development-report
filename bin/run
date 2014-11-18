@@ -1,0 +1,55 @@
+#!/bin/bash
+nb_seq=9
+count=1
+
+echo update ${count}/$nb_seq
+rm -f pkg_Tizen_update.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/pkg_Tizen_update.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f recipes_path.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/recipes_path.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f manifest_fix.xml
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/manifest_fix.xml
+./checkReview.py status --manifest_fix=manifest_fix.xml > manifest_fix_result.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f Yocto-recipes-source.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/Yocto-recipes-source.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f Tizen-rpm-source.html
+wget http://download.tizen.org/snapshots/tizen/ivi/latest/repos/atom/source/ -O Tizen-rpm-source.html
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f list_Tizen_Common_Package.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/list_Tizen_Common_Package.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f list_TizenIVI_Modello_Package.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/list_TizenIVI_Modello_Package.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+rm -f list_TizenIVI_ICO_Package.txt
+wget https://raw.githubusercontent.com/eurogiciel-oss/yoctoTizenTools/master/documention/list_TizenIVI_ICO_Package.txt
+(( count++ ))
+
+echo update ${count}/$nb_seq
+./createVersionYoctoTizen.py status \
+                                    --pkg_Tizen_update=pkg_Tizen_update.txt \
+                                    --recipes_path=recipes_path.txt \
+                                    --manifest_fix_result=manifest_fix_result.txt \
+                                    --YoctoSRC=Yocto-recipes-source.txt \
+                                    --TizenSRC=Tizen-rpm-source.html \
+                                    --ImagePackagesList=list_Tizen_Common_Package.txt,list_TizenIVI_Modello_Package.txt,list_TizenIVI_ICO_Package.txt  \
+                                    > result.txt
+

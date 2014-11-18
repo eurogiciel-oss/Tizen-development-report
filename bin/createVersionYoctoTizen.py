@@ -79,12 +79,24 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
                   help = "the Tizen rpm source file\n #wget http://download.tizen.org/snapshots/tizen/ivi/latest/repos/atom/source/ -O Tizen-rpm-source.html \nDefault: Tizen-rpm-source.html" )
     @cmdln.option( "--YoctoSRC",
                   action = "store",
-                  default = "Yocot-recipes-source.txt",
-                  help = "select the project.\n #bitbake-layers show-recipes > Yocot-recipes-source.txt \nDefault: Yocot-recipes-source.txt" )
+                  default = "Yocto-recipes-source.txt",
+                  help = "select the project.\n #bitbake-layers show-recipes > Yocto-recipes-source.txt \nDefault: Yocto-recipes-source.txt" )
     @cmdln.option( "--YoctoSRC_ignored",
                   action = "store",
                   default = "meta-tizen",
                   help = "ignore src for meta \nDefault: meta-tizen" )
+    @cmdln.option( "--manifest_fix_result",
+                  action = "store",
+                  default = "manifest_fix_result.txt",
+                  help = "manifest_fix_result" )
+    @cmdln.option( "--recipes_path",
+                  action = "store",
+                  default = "recipes_path.txt",
+                  help = "recipes_path" )
+    @cmdln.option( "--pkg_Tizen_update",
+                  action = "store",
+                  default = "pkg_Tizen_update.txt",
+                  help = "pkg_Tizen_update" )
     def do_status(self, subcmd, opts): 
         """generate status
         
@@ -126,26 +138,54 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
                 rpm_name=rpm_name[:rpm_name.rfind("-")]
                 version=rpm_name[rpm_name.rfind("-")+1:]
                 name=rpm_name[:rpm_name.rfind("-")]
-                tizenPkg[name]=version
+                tizenPkg[name]=version 
         tizenVerFile.close()
-        
-        imagePackagesListFile= open(opts.ImagePackagesList,"r")
+   
         imagePkg={}
-        imagePkg_version={}
-        for line in imagePackagesListFile:
-            line = line.replace("\n","")
-            rpm_name=line.split(".src.rpm")[0]
-            release=rpm_name[rpm_name.rfind("-")+1:]
-            rpm_name=rpm_name[:rpm_name.rfind("-")]
-            version=rpm_name[rpm_name.rfind("-")+1:]
-            name=rpm_name[:rpm_name.rfind("-")]
+        for imagePackagesPath in opts.ImagePackagesList.split(","):
+            imagePackagesListFile= open(imagePackagesPath,"r")
+            imageYoctoPkg_version={}
+            for line in imagePackagesListFile:
+                line = line.replace("\n","")
+                rpm_name=line.split(".src.rpm")[0]
+                release=rpm_name[rpm_name.rfind("-")+1:]
+                rpm_name=rpm_name[:rpm_name.rfind("-")]
+                version=rpm_name[rpm_name.rfind("-")+1:]
+                name=rpm_name[:rpm_name.rfind("-")]
             
-            if version =="git" and release =="r0":
-                imagePkg[name]='Tizen'
-            else:
-                imagePkg[name]='Yocto'
-                imagePkg_version[name]=version
-        imagePackagesListFile.close()
+                if version =="git" and release =="r0":
+                    imagePkg[name]='Tizen'
+                else:
+                    imagePkg[name]='Yocto'
+                    imageYoctoPkg_version[name]=version
+                
+            imagePackagesListFile.close()
+        
+        reviewPkg={}
+        manifest_fix_resultFile = open(opts.manifest_fix_result,"r")
+        for line in manifest_fix_resultFile:
+            line = line.replace("\n","")
+            pkg_name,review_url,review_status=line.split(" ")
+            reviewPkg[pkg_name]=[review_url,review_status]
+            
+        manifest_fix_resultFile.close()
+        
+        pkg_recipes_path_dico={}
+        pkg_recipes_pathFile = open(opts.recipes_path,"r")
+        for line in pkg_recipes_pathFile:
+            line = line.replace("\n","")
+            pkg_name,recipes_path=line.split("\t")
+            pkg_recipes_path_dico[pkg_name]=recipes_path
+        pkg_recipes_pathFile.close()
+        
+        pkg_jira_update={}
+
+        jira_updateFile = open(opts.pkg_Tizen_update,"r")
+        for line in jira_updateFile:
+            line = line.replace("\n","")
+            pkg_name,jira=line.split("\t")
+            pkg_jira_update[pkg_name]=jira
+        jira_updateFile.close()
         
         resList=imagePkg.keys()
         resList.sort()
@@ -154,28 +194,41 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
             tizenV=tizenPkg[k]
           else:
             tizenV="None"
-          
-          if k in yoctoPkg.keys():
-            yoctoV=getYoctoMax(yoctoPkg[k])
+
+          if k in imageYoctoPkg_version.keys() :
+            yoctoV=imageYoctoPkg_version[k]
           else:
-            if k in imagePkg_version.keys() :
-              yoctoV=imagePkg_version[k]
+            if k in yoctoPkg.keys():
+              yoctoV=getYoctoMax(yoctoPkg[k])
             else:
               yoctoV="None"
           
-          status=""
+          revision_status=""
           if yoctoV == "None":
-              status="-"
+              revision_status="-"
           elif tizenV == "None":
-              status="-"
+              revision_status="-"
           elif tizenV == yoctoV:
-              status="sync"
+              revision_status="sync"
           elif isNewerRev(tizenV , yoctoV):
-              status="newer"
+              revision_status="newer"
           else :
-              status="older"
+              revision_status="older"
               
-          print "%s\t%s\t%s\t%s\t%s" % (k, imagePkg[k], tizenV, yoctoV, status)
+          review_status=" "
+          review_url=" "
+          if k in reviewPkg.keys():
+              [review_url,review_status]=reviewPkg[k]
+              
+          jira=" "
+          if k in pkg_jira_update.keys():
+              jira="https://bugs.tizen.org/jira/browse/"+pkg_jira_update[k]
+          
+          pkg_recipes_path = " "
+          if k in pkg_recipes_path_dico.keys():
+              pkg_recipes_path=pkg_recipes_path_dico[k]
+              
+          print "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (k, imagePkg[k], tizenV, yoctoV, revision_status,review_url,review_status,jira,pkg_recipes_path)
 
 
 def main():
