@@ -33,18 +33,18 @@ AGE=$1
 TEMPLATE=$2
 
 # Changes to merge
-tizen-info -q "is:open age:${AGE}d label:Code-Review+2 label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s!__GERRIT_ACTION__!TO_MERGE!g"
+tizen-info -q "is:open age:${AGE}d label:Code-Review+2 label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s@__GERRIT_ACTION__@TO_MERGE@g"
 
 # Changes to review
-tizen-info -q "status:open age:${AGE}d label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2 NOT label:Code-Review+2" -t $TEMPLATE | sed "s!__GERRIT_ACTION__!TO_REVIEW!g"
+tizen-info -q "status:open age:${AGE}d label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2 NOT label:Code-Review+2" -t $TEMPLATE | sed "s@__GERRIT_ACTION__@TO_REVIEW@g"
 
 # Changes to verify
-tizen-info -q "status:open age:${AGE}d label:Code-Review+2 NOT label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s!__GERRIT_ACTION__!TO_VERIFY!g"
+tizen-info -q "status:open age:${AGE}d label:Code-Review+2 NOT label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s@__GERRIT_ACTION__@TO_VERIFY@g"
 
 # Changes to review and verify
-tizen-info -q "status:open age:${AGE}d NOT label:Code-Review+2 NOT label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s!__GERRIT_ACTION__!TO_REVIEW_AND_VERIFY!g"
+tizen-info -q "status:open age:${AGE}d NOT label:Code-Review+2 NOT label:Verified+1 NOT label:Verified-1 NOT label:Code-Review-2" -t $TEMPLATE | sed "s@__GERRIT_ACTION__@TO_REVIEW_AND_VERIFY@g"
 
 # Invalid changes
-tizen-info -q "status:open age:${AGE}d (label:Verified-1 OR label:Code-Review-2)" -t $TEMPLATE | sed "s!__GERRIT_ACTION__!INVALID!g"
+tizen-info -q "status:open age:${AGE}d (label:Verified-1 OR label:Code-Review-2)" -t $TEMPLATE | sed "s@__GERRIT_ACTION__@INVALID@g"
 
 exit 0
