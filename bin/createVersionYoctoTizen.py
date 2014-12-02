@@ -182,7 +182,7 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
 
         jira_updateFile = open(opts.pkg_Tizen_update,"r")
         for line in jira_updateFile:
-	    if '\t' in line:
+            if '\t' in line:
                 line = line.replace("\n","")
                 pkg_name,jira=line.split("\t")
                 pkg_jira_update[pkg_name]=jira
@@ -223,7 +223,8 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
               
           jira=" "
           if k in pkg_jira_update.keys():
-              jira="https://bugs.tizen.org/jira/browse/"+pkg_jira_update[k]
+              if revision_status is 'older':
+                  jira="https://bugs.tizen.org/jira/browse/"+pkg_jira_update[k]
           
           pkg_recipes_path = " "
           if k in pkg_recipes_path_dico.keys():
