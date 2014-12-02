@@ -182,9 +182,10 @@ class CreateVersionYoctoTizen(cmdln.Cmdln):
 
         jira_updateFile = open(opts.pkg_Tizen_update,"r")
         for line in jira_updateFile:
-            line = line.replace("\n","")
-            pkg_name,jira=line.split("\t")
-            pkg_jira_update[pkg_name]=jira
+	    if '\t' in line:
+                line = line.replace("\n","")
+                pkg_name,jira=line.split("\t")
+                pkg_jira_update[pkg_name]=jira
         jira_updateFile.close()
         
         resList=imagePkg.keys()
