@@ -18,22 +18,6 @@ Besides jq you need 2 things to get all the scripts working:
 * An access to Tizen Gerrit
 * A local, updated copy of the Tizen repos containing all projects' git repo.
 
-# Install
-
-	./install <binary_destination> <data_destination>
-
-There isn't an uninstall script (yet).
-
-# Main script
-
-## tizen-info
-
-Return a full report whose results match the given parameters.
-
-Full documentation:
-
-	tizen-info -h
-
 # Other scripts
 
 ## Multi-user
@@ -54,7 +38,6 @@ Old scripts can be found on the branch v1_2014-03-25.
 
 * Allow usage of alternate json parsers (underscore-cli https://github.com/ddopson/underscore-cli)
 * Return more data (gerrit-owner...)
-* Add an uninstall script
 * Improve documentation
 
 # License

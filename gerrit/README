@@ -1,0 +1,6 @@
+To generate the charts:
+
+./gerrit-status.sh
+
+Note that it may take a while since a lot of data need to be fetched.
+
