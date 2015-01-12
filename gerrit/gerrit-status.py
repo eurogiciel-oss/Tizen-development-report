@@ -506,20 +506,8 @@ def main():
                             patch_set = last_patch_set(element)
                             review_number = get_review_number(element)
                             print 'https://review.tizen.org/gerrit/#/c/%i' % review_number
-                            command = 'gerrit review --abandon %i,%i' % (review_number, patch_set)
+                            command = 'gerrit review --message "To\ be\ abandonned\ because\ last\ update\ was\ made\ more\ than\ 90\ days\ ago." --abandon %i,%i' % (review_number, patch_set)
                             Popen(["ssh", "review.tizen.org", command], stdout=PIPE).communicate()[0]
-                            output = Popen(["ssh", "review.tizen.org", "gerrit", "query", "--format=JSON", "change:{}".format(review_number)], stdout=PIPE).communicate()[0]
-                            # If the patch has been abandoned, add a message
-                            status = ''
-                            try:
-                                result = output.split('\n')[0]
-                                decoded = json.loads(result)
-                                status = decoded['status']
-                            except (ValueError, KeyError, TypeError):
-                                print "JSON format error"
-                            if status is "ABANDONED":
-                                command = 'gerrit review --message "Automatically\ abandonned\ because\ last\ update\ was\ made\ more\ than\ 90\ days\ ago." %i,%i' % (review_number, patch_set)
-                                Popen(["ssh", "review.tizen.org", command], stdout=PIPE).communicate()[0]
             f.close()
 
     else:
