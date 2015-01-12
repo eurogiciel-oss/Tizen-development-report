@@ -106,7 +106,7 @@ def review_info(json_data):
         else:
             merge_date = decoded['comments'][count]['timestamp']
     except (ValueError, KeyError, TypeError):
-        print "JSON format error"
+        print "JSON format error in \"review_info\""
 
     return [upload_date, merge_date]
 
@@ -127,14 +127,27 @@ def last_patch_set(json_data):
                 break
 
         if count >= max_count:
-
             message = decoded['comments'][count]['message']
             patch_set = int(re.findall(r'\b\d+\b', message)[0])
 
     except (ValueError, KeyError, TypeError):
-        print "JSON format error"
+        print "JSON format error in \"last_patch_set\""
 
     return patch_set
+
+def updated_date(json_data):
+
+    project = ""
+    updated_date = -1
+
+    try:
+        decoded = json.loads(json_data)
+        updated_date = decoded['lastUpdated']
+
+    except (ValueError, KeyError, TypeError):
+        print "JSON format error in \"updated_date\""
+
+    return updated_date
 
 def get_review_number(json_data):
 
@@ -143,7 +156,7 @@ def get_review_number(json_data):
         number = int(decoded['number'])
 
     except (ValueError, KeyError, TypeError):
-        print "JSON format error"
+        print "JSON format error in \"get_review_number\""
 
     return number
 
@@ -485,11 +498,28 @@ def main():
             for element in review_list:
                 if element:
                     if not element.count('runTimeMilliseconds'):
-                        review_info_list.append(review_info(element))
-                        patch_set = last_patch_set(element)
-                        review_number = get_review_number(element)
-                        print 'ssh review.tizen.org gerrit review --abandon %i,%i --message "Automatically abandonned because last update was made more than 90 days ago."' % (review_number, patch_set)
-                        #Popen(["ssh", "review.tizen.org", "gerrit", "ls-projects"], stdout=PIPE).communicate()[0]
+                        updated = updated_date(element)
+                        if updated is -1:
+                            print "ERROR: wrong update date"
+                        elif updated < calendar.timegm(time.gmtime()) - 90 * day_s:
+                            # Abandon the patch
+                            patch_set = last_patch_set(element)
+                            review_number = get_review_number(element)
+                            print 'https://review.tizen.org/gerrit/#/c/%i' % review_number
+                            command = 'gerrit review --abandon %i,%i' % (review_number, patch_set)
+                            Popen(["ssh", "review.tizen.org", command], stdout=PIPE).communicate()[0]
+                            output = Popen(["ssh", "review.tizen.org", "gerrit", "query", "--format=JSON", "change:{}".format(review_number)], stdout=PIPE).communicate()[0]
+                            # If the patch has been abandoned, add a message
+                            status = ''
+                            try:
+                                result = output.split('\n')[0]
+                                decoded = json.loads(result)
+                                status = decoded['status']
+                            except (ValueError, KeyError, TypeError):
+                                print "JSON format error"
+                            if status is "ABANDONED":
+                                command = 'gerrit review --message "Automatically\ abandonned\ because\ last\ update\ was\ made\ more\ than\ 90\ days\ ago." %i,%i' % (review_number, patch_set)
+                                Popen(["ssh", "review.tizen.org", command], stdout=PIPE).communicate()[0]
             f.close()
 
     else:
